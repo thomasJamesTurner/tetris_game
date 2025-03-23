@@ -9,7 +9,7 @@ pygame.init()
 WIDTH, HEIGHT = 300, 600
 GRID_SIZE = 30
 COLUMNS, ROWS = WIDTH // GRID_SIZE, HEIGHT // GRID_SIZE
-WHITE, BLACK, RED, GREEN, BLUE = (255, 255, 255), (0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255)
+BLACK,RED, GREEN, BLUE = (255,255,255), (255, 0, 0), (0, 255, 0), (0, 0, 255)
 
 # Shapes
 SHAPES = [
@@ -25,6 +25,7 @@ SHAPES = [
 # Global variables
 global speed
 speed = 1000
+
 class Tetromino:
     def __init__(self, x, y):
         self.x, self.y = x, y
@@ -39,7 +40,6 @@ class Tetromino:
                         pygame.event.post(pygame.event.Event(game_over))
 
     def rotate(self, grid):
-        """ Rotate the Tetromino if there is space """
         rotated_shape = [list(row) for row in zip(*self.shape[::-1])]
 
         # check for collisions when rotating
@@ -67,7 +67,7 @@ class Tetromino:
         for i, row in enumerate(self.shape):
             for j, cell in enumerate(row):
                 if cell:
-                    new_y = self.y // GRID_SIZE + i + 1  # Next row position
+                    new_y = self.y // GRID_SIZE + i + 1
                     new_x = self.x // GRID_SIZE + j
 
                     if new_y >= ROWS or grid[new_y][new_x]:
@@ -113,7 +113,6 @@ if __name__ == "__main__":
     pygame.time.set_timer(drop, speed)
     running = True
     grid = [[0] * COLUMNS for _ in range(ROWS)]
-    pieces = [COLUMNS * ROWS /4]
     current_piece = Tetromino(WIDTH // 2 - GRID_SIZE, 0)
 
     while running:       
@@ -122,6 +121,7 @@ if __name__ == "__main__":
         
         for event in pygame.event.get():
             
+            # User movement for current piece except down key which is in go_down
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP or event.key == pygame.K_w:
                     current_piece.rotate(grid)
@@ -131,26 +131,32 @@ if __name__ == "__main__":
                 if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     if current_piece.can_move(1, 0, grid):
                         current_piece.x += GRID_SIZE
+                if event.type == drop:
+                    if current_piece.has_reached_bottom(grid):
+                        for i, row in enumerate(current_piece.shape):
+                            for j, cell in enumerate(row):
+                                if cell:
+                                    grid[(current_piece.y // GRID_SIZE) + i][(current_piece.x // GRID_SIZE) + j] = current_piece.color
+                        clear_rows(grid)
+                        current_piece = Tetromino(WIDTH // 2 - GRID_SIZE, 0)
+                    else:
+                        current_piece.y += GRID_SIZE
+            
+            # Exit conditions
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == drop:
-                if current_piece.has_reached_bottom(grid):
-                    for i, row in enumerate(current_piece.shape):
-                        for j, cell in enumerate(row):
-                            if cell:
-                                grid[(current_piece.y // GRID_SIZE) + i][(current_piece.x // GRID_SIZE) + j] = current_piece.color
-                    clear_rows(grid)
-                    current_piece = Tetromino(WIDTH // 2 - GRID_SIZE, 0)
-                else:
-                    current_piece.y += GRID_SIZE
+            
             if event.type == game_over:
+                # Will replace this with game over screen
                 running = False
 
+        # Adding existing pieces to the draw call
         for i in range(ROWS):
             for j in range(COLUMNS):
                 if grid[i][j]:
                     pygame.draw.rect(screen, grid[i][j], (j * GRID_SIZE, i * GRID_SIZE, GRID_SIZE, GRID_SIZE))
         
+        # Drawing
         current_piece.draw(screen)
         pygame.display.flip()
         clock.tick(100)
