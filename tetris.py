@@ -10,7 +10,7 @@ WIDTH, HEIGHT = 300, 600
 GRID_SIZE = 30
 COLUMNS, ROWS = WIDTH // GRID_SIZE, HEIGHT // GRID_SIZE
 BLACK,WHITE,RED, GREEN, BLUE,YELLOW = (0,0,0),(255,255,255), (255, 0, 0), (0, 255, 0), (0, 0, 255),(255,255,0)
-
+INITAL_SPEED = 1000
 # Shapes
 SHAPES = [
     [[1, 1, 1, 1]],             # I
@@ -25,8 +25,10 @@ SHAPES = [
 # Global variables
 global speed
 global score
-speed = 1000
+global row_count
+speed = 0
 score = 0
+row_count = 0
 
 class Tetromino:
     def __init__(self, x, y):
@@ -97,32 +99,41 @@ class Tetromino:
                                      (self.x + j * GRID_SIZE, self.y + i * GRID_SIZE, GRID_SIZE, GRID_SIZE))
 
 def update_score(screen):
-    myfont = pygame.font.SysFont("monospace", 30)
+    font_size = 20
+    myfont = pygame.font.SysFont("monospace", font_size)
 
     # render text
-    label = myfont.render(str(score),1, WHITE)
-    screen.blit(label, (WIDTH, 20))
+    score_txt = myfont.render("Score: "+str(score) ,1, WHITE)
+    speed_txt = myfont.render("Speed: "+str(speed) ,1, WHITE)
+    row_count_txt = myfont.render("Rows: "+ str(row_count),1,WHITE)
+
+    screen.blit(score_txt, (WIDTH+5, 20))
+    screen.blit(speed_txt, (WIDTH+5, 20+font_size))
+    screen.blit(row_count_txt, (WIDTH+5, 20+font_size * 2))
 
 def clear_rows(grid):
     global speed
     global score
+    global row_count
     full_rows = [i for i, row in enumerate(grid) if all(row)]
     if len(full_rows) > 0:
-        speed = max(100, int(speed * 0.8))
-        pygame.time.set_timer(drop, speed)
-        score = score + int(100000*len(full_rows) / speed)
+        row_count += len(full_rows)
+        speed = min(10,speed+1)
+        velocity = max(100, int(INITAL_SPEED - (speed*90)))
+        pygame.time.set_timer(drop, velocity)
+        score = score + int(100000*len(full_rows) / velocity)
         
     for row in full_rows:
         del grid[row]  
         grid.insert(0, [0] * COLUMNS)  # Add an empty row at the top to compensate for deleted row
 
 if __name__ == "__main__":
-    screen = pygame.display.set_mode((WIDTH + 100, HEIGHT))
+    screen = pygame.display.set_mode((WIDTH + 200, HEIGHT))
     clock = pygame.time.Clock()
     drop = pygame.USEREVENT + 1
     game_over = pygame.USEREVENT +2
     
-    pygame.time.set_timer(drop, speed)
+    pygame.time.set_timer(drop, INITAL_SPEED)
     running = True
     grid = [[0] * COLUMNS for _ in range(ROWS)]
     current_piece = Tetromino(WIDTH // 2 - GRID_SIZE, 0)
@@ -130,6 +141,8 @@ if __name__ == "__main__":
     while running:       
         current_piece.go_down()
         screen.fill(BLACK)
+        score_board = pygame.Rect(WIDTH,0,200,HEIGHT)
+        pygame.draw.rect(screen,(50,50,50),score_board)
         update_score(screen)
         
         for event in pygame.event.get():
