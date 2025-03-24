@@ -2,6 +2,7 @@ import pygame
 import random
 
 # Initialize pygame
+pygame.mixer.pre_init(44100, -16, 2, 512)
 pygame.init()
 
 # Game Constants
@@ -29,6 +30,8 @@ global row_count
 speed = 0
 score = 0
 row_count = 0
+
+collision_sfx = pygame.mixer.Sound("assets/sfx/collision3.wav")
 
 class Tetromino:
     def __init__(self, x, y):
@@ -68,6 +71,7 @@ class Tetromino:
         
 
     def has_reached_bottom(self, grid):
+        
         for i, row in enumerate(self.shape):
             for j, cell in enumerate(row):
                 if cell:
@@ -159,11 +163,13 @@ if __name__ == "__main__":
                         current_piece.x += GRID_SIZE
             if event.type == drop:
                 if current_piece.has_reached_bottom(grid):
+                    collision_sfx.play()
                     for i, row in enumerate(current_piece.shape):
                         for j, cell in enumerate(row):
                             if cell:
                                 grid[(current_piece.y // GRID_SIZE) + i][(current_piece.x // GRID_SIZE) + j] = current_piece.color
                     clear_rows(grid)
+                    
                     current_piece = Tetromino(WIDTH // 2 - GRID_SIZE, 0)
                 else:
                     current_piece.y += GRID_SIZE
