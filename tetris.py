@@ -9,7 +9,7 @@ pygame.init()
 WIDTH, HEIGHT = 300, 600
 GRID_SIZE = 30
 COLUMNS, ROWS = WIDTH // GRID_SIZE, HEIGHT // GRID_SIZE
-BLACK,RED, GREEN, BLUE = (255,255,255), (255, 0, 0), (0, 255, 0), (0, 0, 255)
+BLACK,WHITE,RED, GREEN, BLUE,YELLOW = (0,0,0),(255,255,255), (255, 0, 0), (0, 255, 0), (0, 0, 255),(255,255,0)
 
 # Shapes
 SHAPES = [
@@ -24,13 +24,15 @@ SHAPES = [
 
 # Global variables
 global speed
+global score
 speed = 1000
+score = 0
 
 class Tetromino:
     def __init__(self, x, y):
         self.x, self.y = x, y
         self.shape = random.choice(SHAPES)
-        self.color = random.choice([RED, GREEN, BLUE])
+        self.color = random.choice([RED, GREEN, BLUE,YELLOW])
         for i, row in enumerate(self.shape):
             for j, cell in enumerate(row):
                 if cell:
@@ -94,18 +96,28 @@ class Tetromino:
                     pygame.draw.rect(screen, self.color, 
                                      (self.x + j * GRID_SIZE, self.y + i * GRID_SIZE, GRID_SIZE, GRID_SIZE))
 
+def update_score(screen):
+    myfont = pygame.font.SysFont("monospace", 30)
+
+    # render text
+    label = myfont.render(str(score),1, WHITE)
+    screen.blit(label, (WIDTH, 20))
 
 def clear_rows(grid):
     global speed
+    global score
     full_rows = [i for i, row in enumerate(grid) if all(row)]
-    if full_rows:
+    if len(full_rows) > 0:
         speed = max(100, int(speed * 0.8))
+        pygame.time.set_timer(drop, speed)
+        score = score + int(100000*len(full_rows) / speed)
+        
     for row in full_rows:
         del grid[row]  
         grid.insert(0, [0] * COLUMNS)  # Add an empty row at the top to compensate for deleted row
 
 if __name__ == "__main__":
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    screen = pygame.display.set_mode((WIDTH + 100, HEIGHT))
     clock = pygame.time.Clock()
     drop = pygame.USEREVENT + 1
     game_over = pygame.USEREVENT +2
@@ -118,6 +130,7 @@ if __name__ == "__main__":
     while running:       
         current_piece.go_down()
         screen.fill(BLACK)
+        update_score(screen)
         
         for event in pygame.event.get():
             
@@ -131,16 +144,16 @@ if __name__ == "__main__":
                 if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     if current_piece.can_move(1, 0, grid):
                         current_piece.x += GRID_SIZE
-                if event.type == drop:
-                    if current_piece.has_reached_bottom(grid):
-                        for i, row in enumerate(current_piece.shape):
-                            for j, cell in enumerate(row):
-                                if cell:
-                                    grid[(current_piece.y // GRID_SIZE) + i][(current_piece.x // GRID_SIZE) + j] = current_piece.color
-                        clear_rows(grid)
-                        current_piece = Tetromino(WIDTH // 2 - GRID_SIZE, 0)
-                    else:
-                        current_piece.y += GRID_SIZE
+            if event.type == drop:
+                if current_piece.has_reached_bottom(grid):
+                    for i, row in enumerate(current_piece.shape):
+                        for j, cell in enumerate(row):
+                            if cell:
+                                grid[(current_piece.y // GRID_SIZE) + i][(current_piece.x // GRID_SIZE) + j] = current_piece.color
+                    clear_rows(grid)
+                    current_piece = Tetromino(WIDTH // 2 - GRID_SIZE, 0)
+                else:
+                    current_piece.y += GRID_SIZE
             
             # Exit conditions
             if event.type == pygame.QUIT:
